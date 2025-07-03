@@ -1,0 +1,9 @@
+[package]
+name = "vanity_address_challenge"
+type = "bin"
+authors = ["ssups"]
+compiler_version = ">=1.0.0"
+
+
+[dependencies]
+ecrecover = { tag = "v1.0.0", git = "https://github.com/colinnielsen/ecrecover-noir.git" }

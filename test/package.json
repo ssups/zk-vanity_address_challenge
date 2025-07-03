@@ -1,0 +1,12 @@
+{
+  "name": "vanity-address-challenge",
+  "dependencies": {
+    "@aztec/bb.js": "^0.82.2",
+    "@noir-lang/noir_js": "^1.0.0-beta.3",
+    "dotenv": "^17.0.1",
+    "ethers": "^6.15.0"
+  },
+  "devDependencies": {
+    "ts-node": "^10.9.2"
+  }
+}
