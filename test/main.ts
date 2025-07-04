@@ -1,12 +1,13 @@
 import dontenv from "dotenv";
 import { ethers } from "ethers";
 import { generateProof } from "./pkg/generateProof";
+import { blake2s256 } from "@noir-lang/noir_js";
 import fs from "fs";
 
 async function main() {
   dontenv.config();
 
-  const pk = process.env.ONE_LEADING_ZERO_PK;
+  const pk = process.env.FOUR_LEADING_ZERO_PK;
   if (!pk) {
     throw new Error("FOUR_LEADING_ZERO_PK is not set in .env file");
   }
@@ -26,30 +27,22 @@ async function main() {
   const pubKeyX = "0x" + pubKey.substring(0, 64);
   const pubKeyY = "0x" + pubKey.substring(64);
 
-  const { proof, publicInputs, witness } = await generateProof({
+  const nulifier = ethers.hexlify(blake2s256(ethers.getBytes(wallet.address)));
+  const splitedNulifier = [nulifier.slice(0, 34), "0x" + nulifier.slice(34)];
+
+  const { proof, publicInputs, witness, verify } = await generateProof({
     pub_key_x: [...ethers.getBytes(pubKeyX)],
     pub_key_y: [...ethers.getBytes(pubKeyY)],
     signature: [...ethers.getBytes(sigWithoutV)],
     hashed_message: [...ethers.getBytes(hashedMessage)],
-    leading_zeros: 1,
+    leading_zeros: 4,
+    nulifier: splitedNulifier,
   });
 
-  // console.log({ proof, publicInputs });
-
   console.log(ethers.hexlify(proof));
-  // console.log("Public Inputs:", publicInputs);
+  console.log("Verify: ", await verify);
 
   fs.writeFileSync("../circuit/target/proof", proof);
-  console.log(proof.length);
-
-  // not really needed as we harcode the public input in the contract test
-  fs.writeFileSync(
-    "../circuit/target/public-inputs",
-    JSON.stringify(publicInputs)
-  );
-
-  fs.writeFileSync("../circuit/target/witness.gz", witness);
-
   process.exit(0);
 }
 
