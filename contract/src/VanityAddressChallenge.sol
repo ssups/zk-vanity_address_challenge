@@ -26,6 +26,7 @@ contract VanityAddressChallenge is Ownable {
     EnumerableSet.UintSet private activeChallengeIds;
     uint256 private nextChallengeId;
     mapping(uint256 challengeId => ChallengeInfo) public challengeInfo;
+    mapping(bytes32 nulifier => bool) public usedNulifiers;
 
     constructor(address owner_, address verifier_) Ownable(owner_) {
         verifier = IVerifier(verifier_);
@@ -43,18 +44,22 @@ contract VanityAddressChallenge is Ownable {
         emit NewChallengeAdded(newChallengeId);
     }
 
-    function challenge(uint256 challengeId, bytes calldata proof) external {
+    function challenge(uint256 challengeId, bytes32 nulifier, bytes calldata proof) external {
         require(activeChallengeIds.contains(challengeId), "Challenge not active");
+        require(!usedNulifiers[nulifier], "Nulifier already used");
         ChallengeInfo storage info = challengeInfo[challengeId];
 
-        bytes32[] memory publicInputs = new bytes32[](1);
+        bytes32[] memory publicInputs = new bytes32[](3);
         publicInputs[0] = bytes32(info.leadingZeros);
+        publicInputs[1] = nulifier >> 128;
+        publicInputs[2] = nulifier & bytes32(uint256(type(uint128).max));
 
         bool verified = verifier.verify(proof, publicInputs);
         require(verified, "Invalid proof");
 
         payable(msg.sender).sendValue(info.rewards);
         uint256 remainRewarders = --info.remainRewarders;
+        usedNulifiers[nulifier] = true;
 
         emit ChallengeSolved(challengeId, remainRewarders);
 
