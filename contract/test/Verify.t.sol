@@ -16,7 +16,7 @@ contract VerifyTest is Test {
         publicInputs[2] = bytes32(0x000000000000000000000000000000005dd7ea0780714db31448ae6fd71296fd);
     }
 
-    function testVerifyProof() public {
+    function testVerifyProof() public view {
         bytes memory proof = vm.readFileBinary("../circuit/target/proof");
 
         verifier.verify(proof, publicInputs);
