@@ -81,6 +81,7 @@ contract VanityAddressChallenge is Ownable {
             }
             info.remainRewarders = 0;
         }
+        activeChallengeIds.clear();
 
         emit AllChallengesStopped();
     }
