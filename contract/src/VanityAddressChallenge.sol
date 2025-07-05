@@ -8,14 +8,21 @@ import {Address} from "openzeppelin-contracts/contracts/utils/Address.sol";
 import {IVerifier} from "src/Verifier.sol";
 
 struct ChallengeInfo {
-    uint256 leadingZeros;
-    uint256 rewards;
-    uint256 remainRewarders;
+    uint8 leadingZeros;
+    uint8 remainRewarders;
+    uint248 rewards;
+}
+
+library ChallengeInfoLib {
+    function unPack(ChallengeInfo storage info) internal view returns (uint8, uint8, uint248) {
+        return (info.leadingZeros, info.remainRewarders, info.rewards);
+    }
 }
 
 contract VanityAddressChallenge is Ownable {
     using EnumerableSet for EnumerableSet.UintSet;
     using Address for address payable;
+    using ChallengeInfoLib for ChallengeInfo;
 
     event NewChallengeAdded(uint256 indexed challengeId);
     event ChallengeSolved(uint256 indexed challengeId, uint256 remainRewarders);
@@ -32,7 +39,7 @@ contract VanityAddressChallenge is Ownable {
         verifier = IVerifier(verifier_);
     }
 
-    function addChallenge(uint256 leadingZeros, uint256 rewards, uint256 remainRewarders) external payable onlyOwner {
+    function addChallenge(uint8 leadingZeros, uint248 rewards, uint8 remainRewarders) external payable onlyOwner {
         require(leadingZeros > 0 && rewards > 0 && remainRewarders > 0, "All parameters must be greater than zero");
         require(msg.value == rewards * remainRewarders, "Incorrect Ether sent for rewards");
 
@@ -48,16 +55,17 @@ contract VanityAddressChallenge is Ownable {
         require(activeChallengeIds.contains(challengeId), "Challenge not active");
         require(!usedNulifiers[nulifier], "Nulifier already used");
         ChallengeInfo storage info = challengeInfo[challengeId];
+        (uint8 leadingZeros,, uint248 rewards) = info.unPack();
 
         bytes32[] memory publicInputs = new bytes32[](3);
-        publicInputs[0] = bytes32(info.leadingZeros);
+        publicInputs[0] = bytes32(uint256(leadingZeros));
         publicInputs[1] = nulifier >> 128;
         publicInputs[2] = nulifier & bytes32(uint256(type(uint128).max));
 
         bool verified = verifier.verify(proof, publicInputs);
         require(verified, "Invalid proof");
 
-        payable(msg.sender).sendValue(info.rewards);
+        payable(msg.sender).sendValue(rewards);
         uint256 remainRewarders = --info.remainRewarders;
         usedNulifiers[nulifier] = true;
 
@@ -75,9 +83,9 @@ contract VanityAddressChallenge is Ownable {
         for (uint256 i = 0; i < length; i++) {
             uint256 challengeId = challengeIds[i];
             ChallengeInfo storage info = challengeInfo[challengeId];
-            uint256 remainRewarders = info.remainRewarders;
-            if (info.remainRewarders > 0) {
-                payable(owner()).sendValue(info.rewards * remainRewarders);
+            (, uint8 remainRewarders, uint248 rewards) = info.unPack();
+            if (remainRewarders > 0) {
+                payable(owner()).sendValue(rewards * remainRewarders);
             }
             info.remainRewarders = 0;
         }
