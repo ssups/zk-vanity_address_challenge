@@ -1,10 +1,10 @@
 export const contracts = {
   challenge: {
-    address: "0xF9e72F011AF67542A3715A881131ae1B51Ae3c2b",
+    address: "0xE1A7428703b04BF2c33a53b1323682f86C79bD3b",
     abi: require("../contracts/VanityAddressChallenge.json").abi,
   },
   verifier: {
-    address: "0x90cFC95830E9a01cFf4fBD9f1054b2f145D15090",
+    address: "0xC17ba3d753C55AE905a49419dF79eb246Ca397a7",
     abi: require("../contracts/HonkVerifier.json").abi,
   },
 };
